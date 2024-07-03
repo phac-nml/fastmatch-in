@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/phac-nml/fastmatch-in/main/assets/schema_input.json",
-    "title": "phac-nml/fastmatch-in pipeline - params.input schema",
+    "title": "phac-nml/fastmatch-inpipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {
@@ -14,25 +14,20 @@
                 "unique": true,
                 "errorMessage": "Sample name must be provided and cannot contain spaces"
             },
-            "fastq_1": {
+            "mlst_alleles": {
                 "type": "string",
-                "pattern": "^\\S+\\.f(ast)?q(\\.gz)?$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have the extension: '.fq', '.fastq', '.fq.gz' or '.fastq.gz'"
+                "format": "file-path",
+                "pattern": "^\\S+\\.mlst(\\.subtyping)?\\.json(\\.gz)?$",
+                "errorMessage": "MLST JSON file from locidex report, cannot contain spaces and must have the extension: '.mlst.json', '.mlst.json.gz', '.mlst.subtyping.json', or 'mlst.subtyping.json.gz'"
             },
-            "fastq_2": {
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have the extension: '.fq', '.fastq', '.fq.gz' or '.fastq.gz'",
-                "anyOf": [
-                    {
-                        "type": "string",
-                        "pattern": "^\\S+\\.f(ast)?q(\\.gz)?$"
-                    },
-                    {
-                        "type": "string",
-                        "maxLength": 0
-                    }
-                ]
+            "address": {
+                "type": "string",
+                "pattern": "^\\d+(\\.\\d+)*$",
+                "meta": ["address"],
+                "description": "The loci-based typing identifier (address) of the sample",
+                "error_message": "Invalid loci-based typing identifier. Please ensure that the address follows the correct format, consisting of one or more digits separated by periods. Example of a valid identifier: '1.1.1'. Please review and correct the entry"
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "mlst_alleles"]
     }
 }

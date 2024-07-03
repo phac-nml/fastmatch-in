@@ -29,8 +29,9 @@ include { paramsSummaryLog; paramsSummaryMap; fromSamplesheet  } from 'plugin/nf
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { LOCIDEX_MERGE_REF } from '../modules/local/locidex/merge/main'
-include { LOCIDEX_MERGE_QUERY } from '../modules/local/locidex/merge/main'
+include { LOCIDEX_MERGE as LOCIDEX_MERGE_REF } from '../modules/local/locidex/merge/main'
+include { LOCIDEX_MERGE as LOCIDEX_MERGE_QUERY } from '../modules/local/locidex/merge/main'
+include { INPUT_ASSURE } from "../modules/local/input_assure/main"
 include { PROFILE_DISTS } from "../modules/local/profile_dists.nf"
 include { MAP_TO_TSV } from '../modules/local/map_to_tsv.nf'
 include { FAST_MATCH } from '../modules/local/go_cluster/fast_match/main'

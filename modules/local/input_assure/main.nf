@@ -1,5 +1,5 @@
 process INPUT_ASSURE {
-    tag "Assures Inputs are Consistent"
+    tag "Verifying Inputs are Consistent"
     label 'process_single'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

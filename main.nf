@@ -35,7 +35,7 @@ if (params.validate_params) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { FASTMATCH_IN } from './workflows/fastmatch-in'
+include { FASTMATCH_IN } from './workflows/fastmatch_in'
 
 //
 // WORKFLOW: Run main phac-nml/fastmatch-in analysis pipeline
