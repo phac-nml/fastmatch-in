@@ -35,13 +35,13 @@ if (params.validate_params) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { IRIDANEXT } from './workflows/fastmatch-in'
+include { FASTMATCH_IN } from './workflows/fastmatch-in'
 
 //
 // WORKFLOW: Run main phac-nml/fastmatch-in analysis pipeline
 //
-workflow PHACNML_IRIDANEXT {
-    IRIDANEXT ()
+workflow PHACNML_FASTMATCH_IN {
+    FASTMATCH_IN ()
 }
 
 /*
@@ -55,7 +55,7 @@ workflow PHACNML_IRIDANEXT {
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
-    PHACNML_IRIDANEXT ()
+    PHACNML_FASTMATCH_IN ()
 }
 
 /*
