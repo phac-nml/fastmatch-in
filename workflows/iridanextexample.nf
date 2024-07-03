@@ -6,14 +6,6 @@
 
 include { paramsSummaryLog; paramsSummaryMap; fromSamplesheet  } from 'plugin/nf-validation'
 
-def logo = NfcoreTemplate.logo(workflow, params.monochrome_logs)
-def citation = '\n' + WorkflowMain.citation(workflow) + '\n'
-def summary_params = paramsSummaryMap(workflow)
-
-// Print parameter summary log to screen
-log.info logo + paramsSummaryLog(workflow) + citation
-
-WorkflowIridanextexample.initialise(params, log)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,18 +22,17 @@ WorkflowIridanextexample.initialise(params, log)
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { INPUT_CHECK          } from '../subworkflows/local/input_check'
-include { GENERATE_SAMPLE_JSON } from '../modules/local/generatesamplejson/main'
-include { SIMPLIFY_IRIDA_JSON  } from '../modules/local/simplifyiridajson/main'
-include { IRIDA_NEXT_OUTPUT    } from '../modules/local/iridanextoutput/main'
-include { ASSEMBLY_STUB        } from '../modules/local/assemblystub/main'
-include { GENERATE_SUMMARY     } from '../modules/local/generatesummary/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
+include { LOCIDEX_MERGE_REF } from '../modules/local/locidex/merge/main'
+include { LOCIDEX_MERGE_QUERY } from '../modules/local/locidex/merge/main'
+include { PROFILE_DISTS } from "../modules/local/profile_dists.nf"
+include { MAP_TO_TSV } from '../modules/local/map_to_tsv.nf'
 
 //
 // MODULE: Installed directly from nf-core/modules
@@ -54,68 +45,55 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow IRIDANEXT {
+workflow FASTMATCH_IN {
 
     ch_versions = Channel.empty()
-
-    // Create a new channel of metadata from a sample sheet
-    // NB: `input` corresponds to `params.input` and associated sample sheet schema
     input = Channel.fromSamplesheet("input")
-        // Map the inputs so that they conform to the nf-core-expected "reads" format.
-        // Either [meta, [fastq_1]] or [meta, [fastq_1, fastq_2]] if fastq_2 exists
-        .map { meta, fastq_1, fastq_2 ->
-               fastq_2 ? tuple(meta, [ file(fastq_1), file(fastq_2) ]) :
-               tuple(meta, [ file(fastq_1) ])}
 
-    ASSEMBLY_STUB (
-        input
-    )
-    ch_versions = ch_versions.mix(ASSEMBLY_STUB.out.versions)
 
-    // A channel of tuples of ({meta}, [read[0], read[1]], assembly)
-    ch_tuple_read_assembly = input.join(ASSEMBLY_STUB.out.assembly)
+    // Ensure meta.id and mlst_file keys match; generate error report for samples where id ≠ key
+    input_assure = INPUT_ASSURE(input)
+    ch_versions = ch_versions.mix(input_assure.versions)
 
-    GENERATE_SAMPLE_JSON (
-        ch_tuple_read_assembly
-    )
-    ch_versions = ch_versions.mix(GENERATE_SAMPLE_JSON.out.versions)
+    // Prepare reference and query TSV files for LOCIDEX_MERGE
+    profiles = input_assure.result.branch {
+        query: !it[0].address
+    }
 
-    GENERATE_SUMMARY (
-        ch_tuple_read_assembly.collect{ [it] }
-    )
-    ch_versions = ch_versions.mix(GENERATE_SUMMARY.out.versions)
+    reference_values = input_assure.result.collect{ meta, mlst -> mlst}
+    query_values = profiles.query.collect{ meta, mlst -> mlst }
 
-    SIMPLIFY_IRIDA_JSON (
-        GENERATE_SAMPLE_JSON.out.json
-    )
-    ch_versions = ch_versions.mix(SIMPLIFY_IRIDA_JSON.out.versions)
-    ch_simplified_jsons = SIMPLIFY_IRIDA_JSON.out.simple_json.map { meta, data -> data }.collect() // Collect JSONs
+    ref_tag = Channel.value("ref")
+    query_tag = Channel.value("value")
 
-    IRIDA_NEXT_OUTPUT (
-        samples_data=ch_simplified_jsons
-    )
-    ch_versions = ch_versions.mix(IRIDA_NEXT_OUTPUT.out.versions)
+    merged_references = LOCIDEX_MERGE_REF(reference_values, ref_tag)
+    ch_versions = ch_versions.mix(merged_references.versions)
+
+    merged_queries = LOCIDEX_MERGE_QUERY(query_values, query_tag)
+    ch_versions = ch_versions.mix(merged_queries.versions)
+
+
+    // PROFILE DISTS processes
+    mapping_file = prepareFilePath(params.pd_mapping_file, "Selecting ${params.pd_mapping_file} for --pd_mapping_file")
+    if(mapping_file == null){
+        exit 1, "${params.pd_mapping_file}: Does not exist but was passed to the pipeline. Exiting now."
+    }
+
+    columns_file = prepareFilePath(params.pd_columns,  "Selecting ${params.pd_columns} for --pd_mapping_file")
+    if(columns_file == null){
+        exit 1, "${params.pd_columns}: Does not exist but was passed to the pipeline. Exiting now."
+    }
+
+    distances = PROFILE_DISTS(merged_queries.combined_profiles,
+                            merged_references.combined_profiles,
+                            mapping_file,
+                            columns_file)
+    ch_versions = ch_versions.mix(distances.versions)
+
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
-}
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    COMPLETION EMAIL AND SUMMARY
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-workflow.onComplete {
-    if (params.email || params.email_on_fail) {
-        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log)
-    }
-    NfcoreTemplate.dump_parameters(workflow, params)
-    NfcoreTemplate.summary(workflow, params, log)
-    if (params.hook_url) {
-        NfcoreTemplate.IM_notification(workflow, params, summary_params, projectDir, log)
-    }
 }
 
 /*
