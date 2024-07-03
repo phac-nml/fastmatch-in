@@ -33,6 +33,7 @@ include { LOCIDEX_MERGE_REF } from '../modules/local/locidex/merge/main'
 include { LOCIDEX_MERGE_QUERY } from '../modules/local/locidex/merge/main'
 include { PROFILE_DISTS } from "../modules/local/profile_dists.nf"
 include { MAP_TO_TSV } from '../modules/local/map_to_tsv.nf'
+include { FAST_MATCH } from '../modules/local/go_cluster/fast_match/main'
 
 //
 // MODULE: Installed directly from nf-core/modules
@@ -44,6 +45,22 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
+def prepareFilePath(String filep, GString debug_msg){
+    // Rerturns null if a file is not valid
+    def return_path = null
+    if(filep){
+        file_in = file(filep)
+        if(file_in.exists()){
+            return_path = file_in
+            log.debug debug_msg
+        }
+    }else{
+        return_path = []
+    }
+
+    return return_path // empty value if file argument is null
+}
 
 workflow FASTMATCH_IN {
 
@@ -89,6 +106,9 @@ workflow FASTMATCH_IN {
                             mapping_file,
                             columns_file)
     ch_versions = ch_versions.mix(distances.versions)
+
+    go_distances = FAST_MATCH(merged_queries.combined_profiles, merged_references.combined_profiles)
+    ch_versions = ch_versions.mix(go_distances.versions)
 
 
     CUSTOM_DUMPSOFTWAREVERSIONS (
