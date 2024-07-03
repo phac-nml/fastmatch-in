@@ -1,8 +1,8 @@
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A523.04.3-brightgreen.svg)](https://www.nextflow.io/)
 
-# Example Pipeline for IRIDA Next
+# Simple Fast Matching pipeline
 
-This is an example pipeline to be used for integration with IRIDA Next.
+Pipeline for fast matching of isolates.
 
 # Input
 
