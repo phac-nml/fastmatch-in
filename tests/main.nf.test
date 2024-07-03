@@ -1,0 +1,18 @@
+nextflow_pipeline {
+
+    name "Full test of the fast matching pipeline"
+    script "main.nf"
+
+    test("Small scale test of full pipeline"){
+        tag "pipeline_success"
+
+        when {
+            params {
+                input = "$baseDir/tests/data/samplesheets/samplesheet1.csv"
+                outdir = "results"
+            }
+        }then {
+            assert workflow.pipeline_success
+        }
+    }
+}
