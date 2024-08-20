@@ -8,9 +8,10 @@ Pipeline for fast matching of isolates.
 
 The input to the pipeline is a standard sample sheet (passed as `--input samplesheet.csv`) that looks like:
 
-| sample  | fastq_1         | fastq_2         |
+| sample  | mlst_alleles     | address        |
 | ------- | --------------- | --------------- |
-| SampleA | file_1.fastq.gz | file_2.fastq.gz |
+| SampleA | file_1.mlst.json.gz | 1.1.1.1     |
+| SampleB | file_2.mlst.json.gz |             |
 
 The structure of this file is defined in [assets/schema_input.json](assets/schema_input.json). Validation of the sample sheet is performed by [nf-validation](https://nextflow-io.github.io/nf-validation/).
 
@@ -25,10 +26,10 @@ Other parameters (defaults from nf-core) are defined in [nextflow_schema.json](n
 To run the pipeline, please do:
 
 ```bash
-nextflow run phac-nml/fastmatch-in -profile singularity -r main -latest --input assets/samplesheet.csv --outdir results
+nextflow run phac-nml/fastmatch-in -profile singularity -r main -latest --input tests/data/samplesheets/samplesheet1.csv --outdir results
 ```
 
-Where the `samplesheet.csv` is structured as specified in the [Input](#input) section.
+Where the `samplesheet1.csv` is structured as specified in the [Input](#input) section.
 
 # Output
 
